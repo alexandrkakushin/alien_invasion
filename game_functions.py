@@ -2,6 +2,7 @@ import sys
 import pygame
 from bullet import Bullet
 from alien import Alien
+from time import sleep
 
 
 def check_event(settings, screen, ship, bullets):
@@ -62,9 +63,15 @@ def check_bullet_alien_collisions(settings, screen, ship, aliens, bullets):
         create_fleet(settings, screen, ship, aliens)
 
 
-def update_aliens(settings, aliens):
+def update_aliens(settings, stats, screen, ship, aliens, bullets):
     check_fleet_edges(settings, aliens)
     aliens.update()
+
+    if pygame.sprite.spritecollideany(ship, aliens):
+        ship_hit(settings, stats, screen, ship, aliens, bullets)
+
+    check_aliens_bottom(settings, stats, screen, ship, aliens,
+                        bullets)
 
 
 def fire_bullet(settings, screen, ship, bullets):
@@ -86,14 +93,14 @@ def create_fleet(settings, screen, ship, aliens):
 
 def get_number_aliens_x(settings, alien_width):
     available_space_x = settings.screen_width - 2 * alien_width
-    number_aliens_x = int(available_space_x / (2 * alien_width))
+    number_aliens_x = int(available_space_x / (3 * alien_width))
     return number_aliens_x
 
 
 def create_alien(settings, screen, aliens, alien_number, row_number):
     alien = Alien(settings, screen)
     alien_width = alien.rect.width
-    alien.x = alien_width + 2 * alien_width * alien_number
+    alien.x = alien_width + 3 * alien_width * alien_number
     alien.rect.x = alien.x
     alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
     aliens.add(alien)
@@ -116,3 +123,20 @@ def change_fleet_direction(settings, aliens):
     for alien in aliens.sprites():
         alien.rect.y += settings.fleet_drop_speed
     settings.fleet_direction *= -1
+
+
+def ship_hit(settings, stats, screen, ship, aliens, bullets):
+    stats.ships_left -= 1
+    aliens.empty()
+    bullets.empty()
+    create_fleet(settings, screen, ship, aliens)
+    ship.center_ship()
+    sleep(0.5)
+
+
+def check_aliens_bottom(settings, stats, screen, ship, aliens, bullets):
+    screen_rect = screen.get_rect()
+    for alien in aliens.sprites():
+        if alien.rect.bottom >= screen_rect.bottom:
+            ship_hit(settings, stats, screen, ship, aliens, bullets)
+            break
